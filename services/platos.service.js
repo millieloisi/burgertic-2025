@@ -1,12 +1,12 @@
 import { Plato } from "../models/platos.model.js";
+import ProductoImagen from "../models/producto_imagenes.model.js";
 
-const getPlatos = async () => await Plato.findAll();
+const getPlatos = async () => await Plato.findAll({ include: [ProductoImagen] });
 
 const getPlatoById = async (id) =>
     await Plato.findAll({
-        where: {
-            id: id,
-        },
+        where: { id: id },
+        include: [ProductoImagen],
     });
 
 const createPlato = async (plato) =>

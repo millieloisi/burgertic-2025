@@ -18,6 +18,35 @@ const register = async (req, res) => {
             8. Devolver un mensaje de error si algo falló guardando al usuario (status 500)
         
     */
+    try {
+        const { usuario } = req.body;
+
+        if (!usuario) return res.status(400).json({ message: "Falta el campo usuario" });
+
+        const { nombre, apellido, email, password } = usuario;
+
+        if (!nombre || !apellido || !email || !password)
+            return res.status(400).json({ message: "Faltan campos obligatorios" });
+
+        const exists = await UsuariosService.getUsuarioByEmail(email);
+        if (exists) return res.status(400).json({ message: "El email ya está registrado" });
+
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(password, salt);
+
+        const created = await UsuariosService.createUsuario({
+            nombre,
+            apellido,
+            email,
+            password: passwordHash,
+            admin: false,
+        });
+
+        return res.status(201).json({ message: "Usuario creado correctamente", usuario: { id: created.id, nombre: created.nombre, apellido: created.apellido, email: created.email } });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Error al crear el usuario" });
+    }
 };
 
 const login = async (req, res) => {
@@ -36,6 +65,34 @@ const login = async (req, res) => {
             8. Devolver un mensaje de error si algo falló (status 500)
         
     */
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) return res.status(400).json({ message: "Faltan campos email o password" });
+
+        const usuario = await UsuariosService.getUsuarioByEmail(email);
+        if (!usuario) return res.status(400).json({ message: "Usuario o contraseña inválidos" });
+
+        const match = await bcrypt.compare(password, usuario.password);
+        if (!match) return res.status(400).json({ message: "Usuario o contraseña inválidos" });
+
+        const payload = { id: usuario.id };
+        const token = jwt.sign(payload, process.env.JWT_SECRET || "secret", { expiresIn: "30m" });
+
+        // Remove password from response
+        const usuarioSafe = {
+            id: usuario.id,
+            nombre: usuario.nombre,
+            apellido: usuario.apellido,
+            email: usuario.email,
+            admin: usuario.admin,
+        };
+
+        return res.status(200).json({ usuario: usuarioSafe, token });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Error en el login" });
+    }
 };
 
 export default { register, login };

@@ -1,7 +1,13 @@
 import PedidosService from "../services/pedidos.service.js";
 
 const getPedidos = async (req, res) => {
-    // --------------- COMPLETAR ---------------
+    try {
+        const pedidos = await PedidosService.getPedidos();
+        return res.status(200).json(pedidos);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Error al obtener pedidos" });
+    }
     /*
         Recordar que para cumplir con toda la funcionalidad deben:
 
@@ -13,7 +19,14 @@ const getPedidos = async (req, res) => {
 };
 
 const getPedidosByUser = async (req, res) => {
-    // --------------- COMPLETAR ---------------
+    try {
+        const userId = req.user.id;
+        const pedidos = await PedidosService.getPedidosByUser(userId);
+        return res.status(200).json(pedidos || []);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Error al obtener pedidos del usuario" });
+    }
     /*
         Recordar que para cumplir con toda la funcionalidad deben:
 
@@ -26,7 +39,15 @@ const getPedidosByUser = async (req, res) => {
 };
 
 const getPedidoById = async (req, res) => {
-    // --------------- COMPLETAR ---------------
+    try {
+        const id = parseInt(req.params.id);
+        const pedido = await PedidosService.getPedidoById(id);
+        if (!pedido) return res.status(404).json({ message: "Pedido no encontrado" });
+        return res.status(200).json(pedido);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Error al obtener pedido" });
+    }
     /*
         Recordar que para cumplir con toda la funcionalidad deben:
 
@@ -39,7 +60,25 @@ const getPedidoById = async (req, res) => {
 };
 
 const createPedido = async (req, res) => {
-    // --------------- COMPLETAR ---------------
+    try {
+        const body = req.body;
+        if (!body || !body.platos) return res.status(400).json({ message: "Faltan platos" });
+        if (!Array.isArray(body.platos) || body.platos.length === 0) return res.status(400).json({ message: "El campo platos debe ser un array con al menos un elemento" });
+
+        for (const pp of body.platos) {
+            if (!pp.id || !pp.cantidad) return res.status(400).json({ message: "Cada plato debe tener id y cantidad" });
+        }
+
+        const userId = req.user.id;
+
+        const pedido = await PedidosService.createPedido(userId, body.platos, { cupon: body.cupon });
+
+        return res.status(201).json(pedido);
+    } catch (err) {
+        console.error(err);
+        if (err.message && err.message.includes("no existe")) return res.status(400).json({ message: err.message });
+        return res.status(500).json({ message: "Error al crear pedido" });
+    }
     /*
         Recordar que para cumplir con toda la funcionalidad deben:
 
@@ -56,7 +95,17 @@ const createPedido = async (req, res) => {
 };
 
 const aceptarPedido = async (req, res) => {
-    // --------------- COMPLETAR ---------------
+    try {
+        const id = parseInt(req.params.id);
+        const pedido = await PedidosService.getPedidoById(id);
+        if (!pedido) return res.status(404).json({ message: "Pedido no encontrado" });
+        if (pedido.estado !== "pendiente") return res.status(400).json({ message: "El pedido debe estar en estado 'pendiente' para aceptar" });
+        await PedidosService.updatePedido(id, "aceptado");
+        return res.status(200).json({ message: "Pedido aceptado" });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Error al aceptar pedido" });
+    }
     /*
         Recordar que para cumplir con toda la funcionalidad deben:
 
@@ -72,7 +121,17 @@ const aceptarPedido = async (req, res) => {
 };
 
 const comenzarPedido = async (req, res) => {
-    // --------------- COMPLETAR ---------------
+    try {
+        const id = parseInt(req.params.id);
+        const pedido = await PedidosService.getPedidoById(id);
+        if (!pedido) return res.status(404).json({ message: "Pedido no encontrado" });
+        if (pedido.estado !== "aceptado") return res.status(400).json({ message: "El pedido debe estar en estado 'aceptado' para comenzar" });
+        await PedidosService.updatePedido(id, "en camino");
+        return res.status(200).json({ message: "Pedido en camino" });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Error al cambiar estado del pedido" });
+    }
     /*
         Recordar que para cumplir con toda la funcionalidad deben:
 
@@ -88,7 +147,17 @@ const comenzarPedido = async (req, res) => {
 };
 
 const entregarPedido = async (req, res) => {
-    // --------------- COMPLETAR ---------------
+    try {
+        const id = parseInt(req.params.id);
+        const pedido = await PedidosService.getPedidoById(id);
+        if (!pedido) return res.status(404).json({ message: "Pedido no encontrado" });
+        if (pedido.estado !== "en camino") return res.status(400).json({ message: "El pedido debe estar en estado 'en camino' para entregar" });
+        await PedidosService.updatePedido(id, "entregado");
+        return res.status(200).json({ message: "Pedido entregado" });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Error al entregar pedido" });
+    }
     /*
         Recordar que para cumplir con toda la funcionalidad deben:
 
@@ -104,7 +173,16 @@ const entregarPedido = async (req, res) => {
 };
 
 const deletePedido = async (req, res) => {
-    // --------------- COMPLETAR ---------------
+    try {
+        const id = parseInt(req.params.id);
+        const pedido = await PedidosService.getPedidoById(id);
+        if (!pedido) return res.status(404).json({ message: "Pedido no encontrado" });
+        await PedidosService.deletePedido(id);
+        return res.status(200).json({ message: "Pedido eliminado" });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Error al eliminar pedido" });
+    }
     /*
         Recordar que para cumplir con toda la funcionalidad deben:
 

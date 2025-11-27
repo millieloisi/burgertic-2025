@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "dev": "npx nodemon index.js"
+    "dev": "npx nodemon index.js",
+    "seed": "node seeds/seed.js"
+    ,"smoke": "node tests/api_smoke.js"
   },
   "keywords": [],
   "author": "",
@@ -18,6 +20,7 @@
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.12.0",
-    "sequelize": "^6.37.7"
+    "sequelize": "^6.37.7",
+    "qrcode": "^1.5.1"
   }
 }
